@@ -277,20 +277,13 @@ instance Fractional Scientific where
     x / y = fromRational $ toRational x / toRational y
     {-# INLINABLE (/) #-}
 
-    fromRational rational
-        | d == 0    = throw DivideByZero
-        | otherwise = positivize (longDiv 0 0) (numerator rational)
-      where
-        -- Divide the numerator by the denominator using long division.
-        longDiv :: Integer -> Int -> (Integer -> Scientific)
-        longDiv !c !e  0 = Scientific c e
-        longDiv !c !e !n
-                          -- TODO: Use a logarithm here!
-            | n < d     = longDiv (c * 10) (e - 1) (n * 10)
-            | otherwise = case n `quotRemInteger` d of
-                            (#q, r#) -> longDiv (c + q) e r
-
-        d = denominator rational
+    fromRational rational =
+        case fromRationalRepetend Nothing rational of
+          Left _ -> error "The impossible happened"
+          Right (s, Nothing) -> s
+          Right (_s, Just _ix) -> error $
+            "fromRational has been applied to a repeating decimal " ++
+            "which can't be represented in a Scientific!"
 
 -- | Like 'fromRational', this function converts a `Rational` to a `Scientific`
 -- but instead of diverging (i.e loop and consume all space) on
